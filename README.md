@@ -42,7 +42,7 @@ Requires drawd running. Stdlib only -- no dependencies.
 
 ## Design notes
 
-- This is Eshkol's second consumer (mining was the first). It validates the
+- It validates the
   "one randomness interface, many consumers" architecture.
 - For latency-sensitive use (real-time dice), run drawd with the pregen
   buffer (DRAWD_PREGEN_BACKENDS) so slow backends like moonlab do not
