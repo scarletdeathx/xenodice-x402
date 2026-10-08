@@ -51,6 +51,9 @@ if not PAYTO:
 
 price_atomic = str(int(round(float(os.environ.get("X402_PRICE_USDC", "0.01")) * 10**USDC_DECIMALS)))
 
+# Public base URL advertised in the 402 resource block (Bazaar + clients use this).
+PUBLIC_BASE_URL = os.environ.get("X402_PUBLIC_URL", "https://xenodice.rngoddess.com").rstrip("/")
+
 # --- x402 plumbing -----------------------------------------------------------
 facilitator = HTTPFacilitatorClientSync(FacilitatorConfig(url=FACILITATOR_URL))
 server = x402ResourceServerSync(facilitator)
@@ -73,7 +76,7 @@ routes = {
             ),
             max_timeout_seconds=300,
         ),
-        resource="/roll",
+        resource=f"{PUBLIC_BASE_URL}/roll",
         description=(
             "Eshkol-backed dice rolls: GET /roll?sides=20&count=2&backend=moonlab "
             "returns uniform dice rolls drawn from the Eshkol randomness network, "
