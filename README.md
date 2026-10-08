@@ -1,8 +1,7 @@
 # dice-api
 
-HTTP dice rolls backed by Eshkol randomness. Built as the RNG bridge for
-a Myth Engines TTRPG browser game (harsh-noise PopMundo-style), but it is
-just a thin HTTP wrapper around drawd -- any HTTP client can use it.
+HTTP dice rolls backed by Eshkol randomness. 
+
 
 ## What it is
 
