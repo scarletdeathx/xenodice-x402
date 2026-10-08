@@ -107,7 +107,7 @@ def roll():
     try:
         sides = int(q.get("sides", ["20"])[0])
         count = int(q.get("count", ["1"])[0])
-        backend = q.get("backend", ["synthetic"])[0]
+        backend = q.get("backend", ["moonlab"])[0]
         n_bytes = count * 4
         raw = draw_bytes(backend, n_bytes)
         rolls = roll_dice(raw, sides, count)

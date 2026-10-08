@@ -97,7 +97,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             sides = int(q.get("sides", ["20"])[0])
             count = int(q.get("count", ["1"])[0])
-            backend = q.get("backend", ["synthetic"])[0]
+            backend = q.get("backend", ["moonlab"])[0]
             # Over-provision bytes: rejection sampling discards some
             n_bytes = count * 4
             raw = draw_bytes(backend, n_bytes)
