@@ -28,8 +28,24 @@ DRAWD_PORT = 18751
 ERR = 0xFFFFFFFF
 
 
+def _recvall(s, n: int) -> bytes:
+    buf = b""
+    while len(buf) < n:
+        chunk = s.recv(n - len(buf))
+        if not chunk:
+            raise RuntimeError("drawd closed the connection")
+        buf += chunk
+    return buf
+
+
 def draw_bytes(backend: str, n: int) -> bytes:
-    """Get n random bytes from drawd. Unix socket first, TCP fallback."""
+    """Get n random bytes from drawd. Unix socket first, TCP fallback.
+
+    Follows the drawd v1 protocol: 4-byte big-endian length prefix, then
+    exactly <length> random bytes. (An earlier version of this function
+    read raw bytes with no prefix handling, which silently consumed the
+    length prefix as entropy -- biasing every roll.)
+    """
     req = (json.dumps({"backend": backend, "n": n}) + "\n").encode()
     # Try Unix socket
     try:
@@ -39,14 +55,10 @@ def draw_bytes(backend: str, n: int) -> bytes:
         s = socket.create_connection((DRAWD_HOST, DRAWD_PORT), timeout=30)
     with s:
         s.sendall(req)
-        # drawd sends raw bytes (no length prefix on this path per client.py usage)
-        # Actually: read exactly n bytes
-        buf = b""
-        while len(buf) < n:
-            chunk = s.recv(min(65536, n - len(buf)))
-            if not chunk:
-                break
-            buf += chunk
+        (length,) = struct.unpack(">I", _recvall(s, 4))
+        if length == ERR or length > 4 * 1024 * 1024:
+            raise RuntimeError("drawd error response")
+        buf = _recvall(s, length)
     if len(buf) != n:
         raise RuntimeError(f"drawd returned {len(buf)} bytes, wanted {n}")
     return buf
