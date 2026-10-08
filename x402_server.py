@@ -34,6 +34,7 @@ from x402.http.middleware.flask import payment_middleware
 from x402.http.types import PaymentOption, RouteConfig
 from x402.mechanisms.avm import ALGORAND_MAINNET_CAIP2
 from x402.mechanisms.avm.exact.register import register_exact_avm_server
+from x402.mechanisms.evm.exact.register import register_exact_evm_server
 from x402.schemas.base import AssetAmount
 from x402.server import x402ResourceServerSync
 
@@ -44,6 +45,11 @@ FACILITATOR_URL = os.environ.get(
 USDC_ASA_ID = "31566704"  # USDC on Algorand mainnet
 USDC_DECIMALS = 6
 CHALLENGE_TAG = "x402-global-challenge"
+
+# Base (EVM) payment rail — added alongside Algorand, which is untouched.
+BASE_CHAIN_ID = "eip155:8453"
+USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA4aN0"  # native USDC on Base
+EVM_PAYTO = "0x29DcA5EBBbeb4027c65C3797a7B768B09FDae5b2"  # voidwitch.eth
 
 PAYTO = os.environ.get("X402_PAYTO", "").strip()
 if not PAYTO:
@@ -58,24 +64,37 @@ PUBLIC_BASE_URL = os.environ.get("X402_PUBLIC_URL", "https://xenodice.rngoddess.
 facilitator = HTTPFacilitatorClientSync(FacilitatorConfig(url=FACILITATOR_URL))
 server = x402ResourceServerSync(facilitator)
 register_exact_avm_server(server, networks=[ALGORAND_MAINNET_CAIP2])
+register_exact_evm_server(server, networks=[BASE_CHAIN_ID])
 
 routes = {
     "GET /roll": RouteConfig(
-        accepts=PaymentOption(
-            scheme="exact",
-            network=ALGORAND_MAINNET_CAIP2,
-            pay_to=PAYTO,
-            # NOTE: x402s server_base builds the 402 extra from the *prices*
-            # extra, ignoring PaymentOption.extra entirely. The challenge tag
-            # must ride on the AssetAmount or attribution breaks (it is not
-            # retroactive).
-            price=AssetAmount(
-                amount=price_atomic,
-                asset=USDC_ASA_ID,
-                extra={"tag": CHALLENGE_TAG},
+        accepts=[
+            PaymentOption(
+                scheme="exact",
+                network=ALGORAND_MAINNET_CAIP2,
+                pay_to=PAYTO,
+                # NOTE: x402s server_base builds the 402 extra from the *prices*
+                # extra, ignoring PaymentOption.extra entirely. The challenge tag
+                # must ride on the AssetAmount or attribution breaks (it is not
+                # retroactive).
+                price=AssetAmount(
+                    amount=price_atomic,
+                    asset=USDC_ASA_ID,
+                    extra={"tag": CHALLENGE_TAG},
+                ),
+                max_timeout_seconds=300,
             ),
-            max_timeout_seconds=300,
-        ),
+            PaymentOption(
+                scheme="exact",
+                network=BASE_CHAIN_ID,
+                pay_to=EVM_PAYTO,
+                price=AssetAmount(
+                    amount=price_atomic,
+                    asset=USDC_BASE,
+                ),
+                max_timeout_seconds=300,
+            ),
+        ],
         resource=f"{PUBLIC_BASE_URL}/roll",
         description=(
             "Eshkol-backed dice rolls: GET /roll?sides=20&count=2&backend=moonlab "
